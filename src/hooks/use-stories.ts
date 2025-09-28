@@ -16,7 +16,7 @@ export function useStories({
 }: UseStoriesProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
   const [progress, setProgress] = useState(0)
-  const [isPlaying, setIsPlaying] = useState(true) 
+  const [isPlaying, setIsPlaying] = useState(true)
   const [isLoading, setIsLoading] = useState(true)
   const [preloadedImages, setPreloadedImages] = useState<Set<number>>(new Set())
   
@@ -38,7 +38,7 @@ export function useStories({
         setPreloadedImages(prev => new Set(prev).add(index))
         resolve()
       }
-      img.onerror = () => resolve() 
+      img.onerror = () => resolve()
       img.src = stories[index].image
     })
   }, [stories])
@@ -72,6 +72,7 @@ export function useStories({
       isNavigatingRef.current = true
       setCurrentIndex(prev => prev + 1)
       setProgress(0)
+      setIsPlaying(true)
       
       const isImagePreloaded = preloadedImages.has(currentIndex + 1)
       setIsLoading(!isImagePreloaded)
@@ -91,10 +92,11 @@ export function useStories({
       isNavigatingRef.current = true
       setCurrentIndex(prev => prev - 1)
       setProgress(0)
+      setIsPlaying(true)
       
       const isImagePreloaded = preloadedImages.has(currentIndex - 1)
       setIsLoading(!isImagePreloaded)
-
+      
       setTimeout(() => {
         isNavigatingRef.current = false
       }, 100)
@@ -102,8 +104,10 @@ export function useStories({
   }, [currentIndex, preloadedImages])
 
   const togglePlay = useCallback(() => {
-    setIsPlaying(prev => !prev)
-  }, [])
+    setIsPlaying(prev => {
+      return !prev
+    })
+  }, []) 
 
   const pauseStory = useCallback(() => {
     setIsPlaying(false)
@@ -112,11 +116,11 @@ export function useStories({
   const resumeStory = useCallback(() => {
     setIsPlaying(true)
   }, [])
+
   useEffect(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
     }
-
     if (!isPlaying || isLoading) return
 
     intervalRef.current = setInterval(() => {

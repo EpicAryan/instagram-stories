@@ -1,12 +1,11 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
-import { X, ChevronLeft, ChevronRight, Play, Pause } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Pause } from 'lucide-react'
 import { ProgressBar } from './progress-bar'
 import { StoryTransitions } from './story-transitions'
 import { LoadingOverlay, LoadingIndicator } from './loading-states'
-import { useMobileNavigation } from '@/hooks/use-mobile-navigation'
 import { useStories } from '@/hooks/use-stories'
 import type { Story } from '@/lib/types'
 
@@ -35,27 +34,75 @@ export function StoryViewer({ stories, initialIndex, onClose }: StoryViewerProps
     onComplete: onClose
   })
 
-  const {
-    handleTouchStart,
-    handleTouchEnd
-  } = useMobileNavigation({
-    onNext: nextStory,
-    onPrevious: previousStory,
-    onTogglePlay: togglePlay
-  })
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number; time: number } | null>(null)
+  const isHandlingInteraction = useRef(false)
 
-  // Handle keyboard navigation
+  const handleInteraction = (action: () => void) => {
+    if (isHandlingInteraction.current) return
+    
+    isHandlingInteraction.current = true
+    action()
+
+    setTimeout(() => {
+      isHandlingInteraction.current = false
+    }, 200)
+  }
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0]
+    setTouchStart({
+      x: touch.clientX,
+      y: touch.clientY,
+      time: Date.now()
+    })
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStart || isHandlingInteraction.current) return
+
+    const touch = e.changedTouches[0]
+    const deltaX = touch.clientX - touchStart.x
+    const deltaY = touch.clientY - touchStart.y
+    const timeDiff = Date.now() - touchStart.time
+
+    const screenWidth = window.innerWidth
+    const tapX = touch.clientX
+
+    const isTap = timeDiff < 300 && Math.abs(deltaX) < 30 && Math.abs(deltaY) < 30
+    const isSwipe = Math.abs(deltaX) > 50
+
+    if (isSwipe) {
+      if (deltaX > 50) {
+        handleInteraction(previousStory)
+      } else if (deltaX < -50) {
+        handleInteraction(nextStory)
+      }
+    } else if (isTap) {
+      if (tapX < screenWidth / 3) {
+        handleInteraction(previousStory)
+      } else if (tapX > (2 * screenWidth) / 3) {
+        handleInteraction(nextStory)
+      } else {
+        handleInteraction(togglePlay)
+      }
+    }
+
+    setTouchStart(null)
+  }
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isHandlingInteraction.current) return
+
       switch (e.key) {
         case 'ArrowLeft':
           e.preventDefault()
-          previousStory()
+          handleInteraction(previousStory)
           break
         case 'ArrowRight':
         case ' ':
           e.preventDefault()
-          nextStory()
+          handleInteraction(nextStory)
           break
         case 'Escape':
           onClose()
@@ -63,14 +110,30 @@ export function StoryViewer({ stories, initialIndex, onClose }: StoryViewerProps
         case 'p':
         case 'P':
           e.preventDefault()
-          togglePlay()
+          handleInteraction(togglePlay)
           break
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [nextStory, previousStory, togglePlay, onClose])
+  }, [nextStory, previousStory, togglePlay, onClose, isPlaying])
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (isHandlingInteraction.current) return
+
+    const rect = e.currentTarget.getBoundingClientRect()
+    const clickX = e.clientX - rect.left
+    const width = rect.width
+
+    if (clickX < width / 3) {
+      handleInteraction(previousStory)
+    } else if (clickX > (2 * width) / 3) {
+      handleInteraction(nextStory)
+    } else {
+      handleInteraction(togglePlay)
+    }
+  }
 
   if (!currentStory) return null
 
@@ -109,9 +172,9 @@ export function StoryViewer({ stories, initialIndex, onClose }: StoryViewerProps
               }`}
             >
               {isPlaying ? (
-                <Play className="w-2 h-2 text-white fill-current" />
+                <div className="w-0 h-0 border-l-2 border-l-white border-y-transparent border-y-1 ml-0.5"></div>
               ) : (
-                <Pause className="w-2 h-2 text-white fill-current" />
+                <div className="w-1.5 h-1.5 bg-white"></div>
               )}
             </div>
           </div>
@@ -128,30 +191,19 @@ export function StoryViewer({ stories, initialIndex, onClose }: StoryViewerProps
         </button>
       </div>
 
-      <div className="absolute inset-0 z-10 flex">
-        <div 
-          className="w-1/3 h-full"
-          onClick={previousStory}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={(e) => handleTouchEnd(e, 'left')}
-        />
+      <div 
+        className="absolute inset-0 z-10 cursor-pointer"
+        onClick={handleClick}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        style={{ 
+          touchAction: 'none',
+          WebkitTouchCallout: 'none',
+          WebkitUserSelect: 'none'
+        }}
+      />
 
-        <div 
-          className="w-1/3 h-full"
-          onClick={togglePlay}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={(e) => handleTouchEnd(e, 'middle')}
-        />
- 
-        <div 
-          className="w-1/3 h-full"
-          onClick={nextStory}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={(e) => handleTouchEnd(e, 'right')}
-        />
-      </div>
-
-      <div className="relative w-full h-full max-w-lg mx-auto">
+      <div className="relative w-full h-full max-w-lg mx-auto pointer-events-none">
         <LoadingOverlay 
           isLoading={isLoading} 
           isPreloaded={preloadedImages.has(currentIndex)} 
@@ -166,24 +218,27 @@ export function StoryViewer({ stories, initialIndex, onClose }: StoryViewerProps
           isPlaying={isPlaying}
         />
 
+        {/* Pause overlay */}
         {!isPlaying && !isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-30">
-            <div className="bg-black/60 backdrop-blur-sm rounded-full p-6">
-              <Pause className="w-16 h-16 text-white fill-current" />
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-30 pointer-events-none">
+            <div className="bg-black/60 backdrop-blur-sm rounded-full p-6 animate-pulse">
+              <Pause className="w-10 h-10 text-white fill-current" />
             </div>
           </div>
         )}
       </div>
 
+      {/* Navigation hints */}
       {currentIndex > 0 && (
-        <ChevronLeft className="absolute left-2 top-1/2 transform -translate-y-1/2 w-8 h-8 text-white/50 pointer-events-none" />
+        <ChevronLeft className="absolute left-2 top-1/2 transform -translate-y-1/2 w-8 h-8 text-white/30 pointer-events-none" />
       )}
       {currentIndex < totalStories - 1 && (
-        <ChevronRight className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 text-white/50 pointer-events-none" />
+        <ChevronRight className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 text-white/30 pointer-events-none" />
       )}
 
       <LoadingIndicator isVisible={isLoading} />
 
+      {/* Story counter */}
       <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20">
         <div className="bg-black/30 backdrop-blur-sm rounded-full px-3 py-1">
           <span className="text-white/80 text-xs font-medium">

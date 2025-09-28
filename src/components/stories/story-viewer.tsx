@@ -230,10 +230,10 @@ export function StoryViewer({ stories, initialIndex, onClose }: StoryViewerProps
 
       {/* Navigation hints */}
       {currentIndex > 0 && (
-        <ChevronLeft className="absolute left-2 top-1/2 transform -translate-y-1/2 w-8 h-8 text-white/30 pointer-events-none" />
+        <ChevronLeft className="hidden lg:block absolute left-2 top-1/2 transform -translate-y-1/2 w-8 h-8 text-white/30 pointer-events-none" />
       )}
       {currentIndex < totalStories - 1 && (
-        <ChevronRight className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 text-white/30 pointer-events-none" />
+        <ChevronRight className="hidden lg:block absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 text-white/30 pointer-events-none" />
       )}
 
       <LoadingIndicator isVisible={isLoading} />

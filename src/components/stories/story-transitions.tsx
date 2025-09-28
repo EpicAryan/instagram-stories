@@ -30,19 +30,16 @@ export function StoryTransitions({
   const currentStory = stories[currentIndex]
   const previousStory = stories[previousIndex]
 
-  // Handle transitions when currentIndex changes
   useEffect(() => {
     if (previousIndex !== currentIndex) {
       setIsTransitioning(true)
-      
-      // Determine direction
+
       if (currentIndex > previousIndex) {
         setTransitionDirection('next')
       } else {
         setTransitionDirection('prev')
       }
 
-      // Reset after animation
       const timer = setTimeout(() => {
         setIsTransitioning(false)
         setTransitionDirection('none')
@@ -73,7 +70,6 @@ export function StoryTransitions({
 
   return (
     <div className="relative w-full h-full overflow-hidden">
-      {/* Previous story (for transition) */}
       {isTransitioning && previousStory && previousIndex !== currentIndex && (
         <div 
           className={`absolute inset-0 transition-transform duration-400 ease-out ${
@@ -93,7 +89,6 @@ export function StoryTransitions({
         </div>
       )}
 
-      {/* Current story */}
       <div 
         className={`absolute inset-0 transition-transform duration-400 ease-out ${
           getSlideClass(true, false)
@@ -117,7 +112,6 @@ export function StoryTransitions({
         />
       </div>
 
-      {/* Preload next story for smooth transition */}
       {currentIndex < stories.length - 1 && (
         <div className="absolute inset-0 translate-x-full">
           <Image
@@ -131,7 +125,6 @@ export function StoryTransitions({
         </div>
       )}
 
-      {/* Preload previous story for smooth transition */}
       {currentIndex > 0 && (
         <div className="absolute inset-0 -translate-x-full">
           <Image

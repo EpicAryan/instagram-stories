@@ -44,6 +44,24 @@
         "name": "city_explorer",
         "avatar": "https://picsum.photos/64/64?random=15"
       }
+    },
+    {
+      "id": "6",
+      "image": "https://picsum.photos/400/700?random=6",
+      "duration": 5000,
+      "user": {
+        "name": "travel_addict",
+        "avatar": "https://picsum.photos/64/64?random=16"
+      }
+    },
+    {
+      "id": "7",
+      "image": "https://picsum.photos/400/700?random=7",
+      "duration": 5000,
+      "user": {
+        "name": "foodie_journey",
+        "avatar": "https://picsum.photos/64/64?random=17"
+      }
     }
   ]
 }
